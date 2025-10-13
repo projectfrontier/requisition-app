@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brother Employee Requisition Form</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="form-container">
+        <header>
+            <img src="https://logowik.com/content/uploads/images/brother-international7219.logowik.com.webp" alt="Brother Logo" class="logo">
+            <h1>Employee Requisition Form</h1>
+        </header>
+
+        <form id="requisitionForm">
+            <div class="form-section">
+                <label for="requesterName" class="required">Requester Name</label>
+                <input type="text" id="requesterName" name="requesterName" required>
+            </div>
+
+            <div class="form-section">
+                <label for="requesterEmail" class="required">Requester Email</label>
+                <input type="email" id="requesterEmail" name="requesterEmail" required>
+            </div>
+            
+            <div class="form-section">
+                <label for="department" class="required">Department</label>
+                <select id="department" name="department" required>
+                    <option value="" disabled selected>Select Department</option>
+                    <option value="Sales">Sales</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="HR">Human Resources</option>
+                    <option value="IT">IT</option>
+                    </select>
+            </div>
+
+            <div class="form-section">
+                <label for="positionExternalTitle" class="required">Position External Title (ALL CAPITAL LETTERS)</label>
+                <input type="text" id="positionExternalTitle" name="positionExternalTitle" maxlength="255" required oninput="this.value = this.value.toUpperCase()">
+            </div>
+
+            <div class="form-section">
+                <label for="positionCareerLevel" class="required">Position Career Level</label>
+                <select id="positionCareerLevel" name="positionCareerLevel" required>
+                    <option value="" disabled selected>Select Career Level</option>
+                    <option value="Associate">Associate</option>
+                    <option value="Specialist">Specialist</option>
+                    <option value="Manager">Manager</option>
+                    <option value="Director">Director</option>
+                </select>
+            </div>
+
+            <div class="form-section">
+                <label for="aboutTheRole">About the Role</label>
+                <textarea id="aboutTheRole" name="aboutTheRole" maxlength="2000"></textarea>
+            </div>
+            
+            <div class="form-section ai-jd-section">
+                <label for="jobDescriptions" class="required">Job Descriptions</label>
+                <p class="example-text">Example: Developing relationships with potential customers, Establishing new business</p>
+                <div class="ai-input-group">
+                    <input type="text" id="jdKeywords" placeholder="Enter keywords (e.g., Sales, B2B, territory management)" />
+                    <button type="button" id="generateJdBtn" class="primary-button">
+                        Generate JD <span class="spinner" style="display:none;"></span>
+                    </button>
+                </div>
+                
+                <p class="ai-note" id="jdStatusMessage">Enter keywords and click 'Generate JD' to get started.</p>
+
+                <textarea id="jobDescriptions" name="jobDescriptions" maxlength="2000" rows="10" required placeholder="AI-generated Job Description will appear here."></textarea>
+                
+                <div class="ai-actions-group">
+                    <button type="button" id="regenerateJdBtn" class="secondary-button" disabled>Regenerate</button>
+                    <button type="button" id="editJdBtn" class="secondary-button" disabled>Accept & Edit</button>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <label for="jobRequirements">Job Requirements</label>
+                <p class="example-text">Example: Diploma or Degree relating to Mass Communications, Sales or Marketing. At least 2-3 years of experience in sales.</p>
+                <textarea id="jobRequirements" name="jobRequirements" maxlength="2000"></textarea>
+            </div>
+
+            <div class="form-section">
+                <label for="positionReportingTo">Position Reporting to</label>
+                <p class="example-text">Example: Digital Marketing Manager, Head, Human Capital</p>
+                <input type="text" id="positionReportingTo" name="positionReportingTo">
+            </div>
+
+            <div class="form-section">
+                <label for="budgetSalary" class="required">Budget Salary</label>
+                <select id="budgetSalary" name="budgetSalary" required>
+                    <option value="" disabled selected>Select Salary Range</option>
+                    <option value="50000-75000">50,000 - 75,000</option>
+                    <option value="75001-100000">75,001 - 100,000</option>
+                    <option value="100001+">100,001+</option>
+                </select>
+            </div>
+
+            <div class="form-section">
+                <label for="requisitionType" class="required">Requisition Type</label>
+                <select id="requisitionType" name="requisitionType" required>
+                    <option value="" disabled selected>Select Type</option>
+                    <option value="New Hire">New Hire</option>
+                    <option value="Replacement">Replacement</option>
+                    <option value="Temporary">Temporary</option>
+                </select>
+            </div>
+
+            <div class="form-section">
+                <label for="reasonOfRequisition" class="required">Reason of Requisition</label>
+                <textarea id="reasonOfRequisition" name="reasonOfRequisition" maxlength="2000" required></textarea>
+            </div>
+
+            <div class="form-section">
+                <label class="required">Onboarding Requirements</label>
+                <p class="example-text">If require Corporate Credit Card, Business Card and etc.</p>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="onboarding_corporate_card" name="onboarding_corporate_card" value="true">
+                    <label for="onboarding_corporate_card">Corporate Credit Card</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="onboarding_business_card" name="onboarding_business_card" value="true">
+                    <label for="onboarding_business_card">Business Card</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="onboarding_others" name="onboarding_others" value="true">
+                    <label for="onboarding_others">Others</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="onboarding_not_required" name="onboarding_not_required" value="true">
+                    <label for="onboarding_not_required">Not required</label>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <label for="additionalComments">Additional Comments</label>
+                <textarea id="additionalComments" name="additionalComments" maxlength="2000"></textarea>
+            </div>
+
+            <div class="form-section">
+                <label for="requestedDate" class="required">Requested Date</label>
+                <input type="date" id="requestedDate" name="requestedDate" value="2025-10-13" required>
+            </div>
+
+            <button type="submit" id="submitFormBtn">Submit</button>
+        </form>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>

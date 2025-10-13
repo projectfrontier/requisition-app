@@ -1,0 +1,216 @@
+/* General Styling & Dark Theme */
+:root {
+    --bg-color: #1a1a2e;
+    --card-bg: #162447;
+    --text-color: #e4e4e4;
+    --primary-color: #e0f780; /* A bright, modern accent color */
+    --secondary-color: #64748b;
+    --border-color: #2c3a5b;
+    --input-bg: #1a2a4c;
+    --error-color: #ff6b6b;
+}
+
+* {
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+}
+
+.form-container {
+    width: 100%;
+    max-width: 700px;
+    background-color: var(--card-bg);
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Header and Logo */
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.logo {
+    width: 150px;
+    margin-bottom: 10px;
+}
+
+h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0;
+}
+
+/* Form Sections and Inputs */
+.form-section {
+    margin-bottom: 25px;
+}
+
+label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.required::after {
+    content: ' *';
+    color: var(--primary-color);
+}
+
+input[type="text"],
+input[type="email"],
+input[type="date"],
+select,
+textarea {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-color);
+    font-size: 1rem;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(224, 247, 128, 0.3);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* Checkbox Group */
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: auto;
+    margin-right: 10px;
+    accent-color: var(--primary-color); /* Changes the checkbox color */
+}
+
+/* Example Text */
+.example-text {
+    font-size: 0.8rem;
+    color: var(--secondary-color);
+    margin-top: -5px;
+    margin-bottom: 10px;
+}
+
+/* Buttons */
+button {
+    cursor: pointer;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-weight: 700;
+    transition: background-color 0.3s, transform 0.1s;
+}
+
+#submitFormBtn {
+    width: 100%;
+    background-color: var(--primary-color);
+    color: var(--bg-color);
+    font-size: 1.1rem;
+    margin-top: 20px;
+}
+
+#submitFormBtn:hover:not(:disabled) {
+    background-color: #c4e365;
+}
+
+#submitFormBtn:disabled {
+    background-color: var(--secondary-color);
+    cursor: not-allowed;
+}
+
+/* AI Section Specific Styling */
+.ai-input-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.ai-input-group input[type="text"] {
+    flex-grow: 1;
+}
+
+.ai-actions-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.primary-button {
+    background-color: var(--primary-color);
+    color: var(--bg-color);
+    padding: 10px 15px;
+    white-space: nowrap;
+}
+
+.primary-button:hover:not(:disabled) {
+    background-color: #c4e365;
+}
+
+.secondary-button {
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 10px 15px;
+}
+
+.secondary-button:hover:not(:disabled) {
+    background-color: #2c4273;
+}
+
+.primary-button:disabled,
+.secondary-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.ai-note {
+    font-size: 0.85rem;
+    color: var(--secondary-color);
+    margin-top: 0;
+}
+
+/* Loading Spinner */
+.spinner {
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top: 3px solid var(--bg-color);
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 5px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
