@@ -161,10 +161,11 @@ form.addEventListener('submit', async (e) => {
         reason_of_requisition: formData.get('reasonOfRequisition'),
         
         // Handle checkboxes (Supabase expects boolean)
-        onboarding_corporate_card: !!formData.get('onboarding_corporate_card'),
-        onboarding_business_card: !!formData.get('onboarding_business_card'),
-        onboarding_others: !!formData.get('onboarding_others'),
-        onboarding_not_required: !!formData.get('onboarding_not_required'),
+        onboarding_corporate_card: formData.get('onboarding_corporate_card') === 'true',
+        onboarding_business_card: formData.get('onboarding_business_card') === 'true',
+        onboarding_others: formData.get('onboarding_others') === 'true',
+        onboarding_not_required: formData.get('onboarding_not_required') === 'true',
+
 
         additional_comments: formData.get('additionalComments'),
         requested_date: formData.get('requestedDate'),
