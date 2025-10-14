@@ -21,6 +21,11 @@ const generateJdBtn = document.getElementById('generateJdBtn');
 const regenerateJdBtn = document.getElementById('regenerateJdBtn');
 const editJdBtn = document.getElementById('editJdBtn');
 const jdStatusMessage = document.getElementById('jdStatusMessage');
+// 🚨 NEW: Added element for Other Requirements text field
+const otherRequirementsInput = document.getElementById('otherRequirements'); 
+// 🚨 NEW: Added element for Name to be Replaced field (related to Requisition Type)
+const nameToBeReplacedInput = document.getElementById('nameToBeReplaced'); 
+
 
 let isTextEditable = false;
 
@@ -145,33 +150,50 @@ form.addEventListener('submit', async (e) => {
 
     // 1. Gather all form data
     const formData = new FormData(form);
+    
+    // 🚨 FIX 1: Aggregate Onboarding Checkboxes into an Array
+    const onboardingCheckboxes = document.querySelectorAll('input[name="onboardingRequirements"]:checked');
+    const onboardingRequirementsArray = Array.from(onboardingCheckboxes).map(cb => cb.value);
+
+    // 🚨 FIX 2 & 3: Ensure all new fields and correct mapping names are included
     const data = {
+        // Simple Text/Select fields - snake_case names match index.ts record keys
         requester_name: formData.get('requesterName'),
         requester_email: formData.get('requesterEmail'),
         department: formData.get('department'),
         position_external_title: formData.get('positionExternalTitle'),
         position_career_level: formData.get('positionCareerLevel'),
         about_the_role: formData.get('aboutTheRole'),
-        // The most important field: the final JD text
         job_descriptions: formData.get('jobDescriptions'), 
         job_requirements: formData.get('jobRequirements'),
         position_reporting_to: formData.get('positionReportingTo'),
+        
+        // Budget Salary is now a single number string
         budget_salary: formData.get('budgetSalary'),
+        
         requisition_type: formData.get('requisitionType'),
         reason_of_requisition: formData.get('reasonOfRequisition'),
         
-        // Handle checkboxes (Supabase expects boolean)
-        onboarding_corporate_card: formData.get('onboarding_corporate_card') === 'true',
-        onboarding_business_card: formData.get('onboarding_business_card') === 'true',
-        onboarding_others: formData.get('onboarding_others') === 'true',
-        onboarding_not_required: formData.get('onboarding_not_required') === 'true',
-
+        // 🚨 FIX 4: Map checkbox array to the correct key for the Monday Multi-Select
+        onboarding_requirements: onboardingRequirementsArray,
+        
+        // 🚨 FIX 5: Capture the 'Name to be replaced' field
+        name_to_be_replaced: formData.get('nameToBeReplaced'),
+        
+        // 🚨 FIX 6: Capture the 'Other Requirements' field
+        other_requirements: formData.get('otherRequirements'),
 
         additional_comments: formData.get('additionalComments'),
         requested_date: formData.get('requestedDate'),
+        
+        // The old, separate boolean checkboxes are REMOVED as they are replaced by the array above.
     };
     
     // 2. Call the Edge Function again, but this time for saving data
+    // NOTE: If you are sending this to the 'ai-generator' function, 
+    // you must ensure that function is configured to handle the 'submit' action 
+    // and trigger the separate 'monday-webhook' function or database insert. 
+    // Assuming the setup requires an action field:
     try {
         const saveResponse = await fetch(AI_FUNCTION_URL, {
             method: 'POST',
@@ -196,7 +218,8 @@ form.addEventListener('submit', async (e) => {
             alert(`Submission Error: ${saveResult.error}`);
             console.error('Submission Error:', saveResult.error);
         } else {
-            alert('Form submitted successfully! Your requisition ID is: ' + saveResult.id);
+            // NOTE: Assuming the save function returns an ID or confirmation
+            alert('Form submitted successfully! Your requisition ID is: ' + (saveResult.id || 'N/A'));
             form.reset(); // Clear the form on success
             jobDescriptionsTextarea.value = ''; // Reset JD field
             isTextEditable = false;

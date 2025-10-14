@@ -10,7 +10,7 @@
 <body>
     <div class="form-container">
         <header>
-            <img src="https://logowik.com/content/uploads/images/brother-international7219.logowik.com.webp" alt="Brother Logo" class="logo">
+            <img src="https://res.cloudinary.com/monday-platform/image/upload/v1727684245/board_views_images/logos/1727684244767_09f878b1-a818-b986-8422-f24bedc71b83.jpg" alt="Brother Logo" class="logo">
             <h1>Employee Requisition Form</h1>
         </header>
 
@@ -29,11 +29,16 @@
                 <label for="department" class="required">Department</label>
                 <select id="department" name="department" required>
                     <option value="" disabled selected>Select Department</option>
-                    <option value="Sales">Sales</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="HR">Human Resources</option>
-                    <option value="IT">IT</option>
-                    </select>
+                    <option value="Finance">Finance</option>
+                    <option value="HR">HR</option>
+                    <option value="Logistic">Logistic</option>
+                    <option value="MIS">MIS</option>
+                    <option value="Domestic Sales">Domestic Sales</option>
+                    <option value="Domestic Marketing">Domestic Marketing</option>
+                    <option value="Customer Services">Customer Services</option>
+                    <option value="Regional Marketing">Regional Marketing</option>
+                    <option value="ISM">ISM</option>
+                </select>
             </div>
 
             <div class="form-section">
@@ -45,10 +50,16 @@
                 <label for="positionCareerLevel" class="required">Position Career Level</label>
                 <select id="positionCareerLevel" name="positionCareerLevel" required>
                     <option value="" disabled selected>Select Career Level</option>
-                    <option value="Associate">Associate</option>
-                    <option value="Specialist">Specialist</option>
-                    <option value="Manager">Manager</option>
-                    <option value="Director">Director</option>
+                    <option value="Career Level 1: Dispatch/ Driver">Career Level 1: Dispatch/ Driver</option>
+                    <option value="Career Level 2: Coordinator/ Associate">Career Level 2: Coordinator/ Associate</option>
+                    <option value="Career Level 3: Senior Coordinator/ Senior Associate">Career Level 3: Senior Coordinator/ Senior Associate</option>
+                    <option value="Career Level 4: Executive / Associate Executive">Career Level 4: Executive / Associate Executive</option>
+                    <option value="Career Level 5: Lead Executive / Senior Executive">Career Level 5: Lead Executive / Senior Executive</option>
+                    <option value="Career Level 6: Assistant Manager / Senior Specialist / Specialist">Career Level 6: Assistant Manager / Senior Specialist / Specialist</option>
+                    <option value="Career Level 7: Manager/ Senior Lead Specialist / Lead Specialist">Career Level 7: Manager/ Senior Lead Specialist / Lead Specialist</option>
+                    <option value="Career Level 8: Senior Manager / Associate Principal Specialist / Principal Specialist">Career Level 8: Senior Manager / Associate Principal Specialist / Principal Specialist</option>
+                    <option value="Career Level 9: GM/ DGM">Career Level 9: GM/ DGM</option>
+                    <option value="Career Level 10: Director">Career Level 10: Director</option>
                 </select>
             </div>
 
@@ -91,20 +102,15 @@
 
             <div class="form-section">
                 <label for="budgetSalary" class="required">Budget Salary</label>
-                <select id="budgetSalary" name="budgetSalary" required>
-                    <option value="" disabled selected>Select Salary Range</option>
-                    <option value="50000-75000">50,000 - 75,000</option>
-                    <option value="75001-100000">75,001 - 100,000</option>
-                    <option value="100001+">100,001+</option>
-                </select>
+                <input type="number" id="budgetSalary" name="budgetSalary" required placeholder="Enter desired salary amount (e.g., 75000)" min="0">
             </div>
 
             <div class="form-section">
                 <label for="requisitionType" class="required">Requisition Type</label>
                 <select id="requisitionType" name="requisitionType" required>
                     <option value="" disabled selected>Select Type</option>
-                    <option value="New Hire">New Hire</option>
                     <option value="Replacement">Replacement</option>
+                    <option value="Additional">Additional</option>
                     <option value="Temporary">Temporary</option>
                 </select>
             </div>
@@ -118,19 +124,19 @@
                 <label class="required">Onboarding Requirements</label>
                 <p class="example-text">If require Corporate Credit Card, Business Card and etc.</p>
                 <div class="checkbox-group">
-                    <input type="checkbox" id="onboarding_corporate_card" name="onboarding_corporate_card" value="true">
+                    <input type="checkbox" id="onboarding_corporate_card" name="onboardingRequirements" value="Corporate Credit Card">
                     <label for="onboarding_corporate_card">Corporate Credit Card</label>
                 </div>
                 <div class="checkbox-group">
-                    <input type="checkbox" id="onboarding_business_card" name="onboarding_business_card" value="true">
+                    <input type="checkbox" id="onboarding_business_card" name="onboardingRequirements" value="Business Card">
                     <label for="onboarding_business_card">Business Card</label>
                 </div>
                 <div class="checkbox-group">
-                    <input type="checkbox" id="onboarding_others" name="onboarding_others" value="true">
+                    <input type="checkbox" id="onboarding_others" name="onboardingRequirements" value="Others">
                     <label for="onboarding_others">Others</label>
                 </div>
                 <div class="checkbox-group">
-                    <input type="checkbox" id="onboarding_not_required" name="onboarding_not_required" value="true">
+                    <input type="checkbox" id="onboarding_not_required" name="onboardingRequirements" value="Not required">
                     <label for="onboarding_not_required">Not required</label>
                 </div>
             </div>
@@ -142,7 +148,7 @@
 
             <div class="form-section">
                 <label for="requestedDate" class="required">Requested Date</label>
-                <input type="date" id="requestedDate" name="requestedDate" value="2025-10-13" required>
+                <input type="date" id="requestedDate" name="requestedDate" required>
             </div>
 
             <button type="submit" id="submitFormBtn">Submit</button>
