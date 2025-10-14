@@ -33,13 +33,22 @@ let isTextEditable = false;
 
 function toggleLoading(isLoading) {
     const spinner = generateJdBtn.querySelector('.spinner');
+    
+    // Check if the spinner element exists before trying to access its properties
+    if (spinner) {
+        spinner.style.display = isLoading ? 'inline-block' : 'none';
+    }
+    
     generateJdBtn.disabled = isLoading;
     jdKeywordsInput.disabled = isLoading;
-    spinner.style.display = isLoading ? 'inline-block' : 'none';
-    generateJdBtn.textContent = isLoading ? 'Generating...' : 'Generate JD';
+    
     if (!isLoading) {
         // Restore original text after stopping loading, replacing the 'Generating...' text
+        // Ensure the button has the spinner span restored if it was removed
         generateJdBtn.innerHTML = `Generate JD <span class="spinner" style="display:none;"></span>`;
+    } else {
+        // Change text only when loading
+        generateJdBtn.textContent = 'Generating...';
     }
 }
 
