@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Brother Employee Requisition Form</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css"> 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -114,6 +114,11 @@
                     <option value="Temporary">Temporary</option>
                 </select>
             </div>
+            
+            <div class="form-section" id="nameToBeReplacedSection" style="display:none;">
+                <label for="nameToBeReplaced">Name to be replaced</label>
+                <input type="text" id="nameToBeReplaced" name="nameToBeReplaced" placeholder="Enter the name of the staff being replaced">
+            </div>
 
             <div class="form-section">
                 <label for="reasonOfRequisition" class="required">Reason of Requisition</label>
@@ -142,6 +147,12 @@
             </div>
 
             <div class="form-section">
+                <label for="otherRequirements">Other Requirements (If 'Others' is checked)</label>
+                <input type="text" id="otherRequirements" name="otherRequirements" placeholder="e.g., specific software licenses, security access">
+            </div>
+
+
+            <div class="form-section">
                 <label for="additionalComments">Additional Comments</label>
                 <textarea id="additionalComments" name="additionalComments" maxlength="2000"></textarea>
             </div>
@@ -154,6 +165,42 @@
             <button type="submit" id="submitFormBtn">Submit</button>
         </form>
     </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const requestedDateInput = document.getElementById('requestedDate');
+            const requisitionTypeSelect = document.getElementById('requisitionType');
+            const nameToBeReplacedSection = document.getElementById('nameToBeReplacedSection');
+            const nameToBeReplacedInput = document.getElementById('nameToBeReplaced');
+
+            // Function to format date as YYYY-MM-DD for the <input type="date"> value
+            function formatDate(date) {
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+                const year = date.getFullYear();
+                return `${year}-${month}-${day}`;
+            }
+
+            // Set the Requested Date to the current date
+            const today = new Date();
+            requestedDateInput.value = formatDate(today);
+            
+            // --- Dynamic Field Toggle for 'Name to be replaced' ---
+            
+            function toggleReplacementField() {
+                const isReplacement = requisitionTypeSelect.value === 'Replacement';
+                nameToBeReplacedSection.style.display = isReplacement ? 'block' : 'none';
+                nameToBeReplacedInput.required = isReplacement;
+                if (!isReplacement) {
+                    nameToBeReplacedInput.value = ''; // Clear value if hidden
+                }
+            }
+
+            // Initial check and event listener
+            toggleReplacementField();
+            requisitionTypeSelect.addEventListener('change', toggleReplacementField);
+        });
+    </script>
     
     <script src="app.js"></script>
 </body>

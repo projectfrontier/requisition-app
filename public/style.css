@@ -72,6 +72,7 @@ label {
 
 input[type="text"],
 input[type="email"],
+input[type="number"], /* Added number type */
 input[type="date"],
 select,
 textarea {
