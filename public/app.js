@@ -1,251 +1,213 @@
-// ====================================================================
-// CONFIGURATION: REPLACE THESE PLACEHOLDERS
-// ====================================================================
+// app.js
+// Load in index.html with: <script type="module" src="app.js"></script>
 
-// NOTE: We will update this URL later after the Edge Function is deployed.
-// For now, use a placeholder.
-const AI_FUNCTION_URL = "https://jlzbxqhvegqcvyhqnkrq.supabase.co/functions/v1/ai-generator"; 
+// ---- SET THESE ----
+const SUPABASE_URL = "https://jlzbxqhvegqcvyhqnkrq.supabase.co";   // public
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsemJ4cWh2ZWdxY3Z5aHFua3JxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyNDQ0MDMsImV4cCI6MjA3NTgyMDQwM30.GU5mpLfbuF0o7W1KNRUV5zSBAqagCYwjTTg0xD1WCnc";            // public anon key
+// -------------------
 
-// NOTE: We will update this value later after the Edge Function is deployed.
-// This is your Supabase Anon Public Key (from Settings -> API)
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsemJ4cWh2ZWdxY3Z5aHFua3JxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyNDQ0MDMsImV4cCI6MjA3NTgyMDQwM30.GU5mpLfbuF0o7W1KNRUV5zSBAqagCYwjTTg0xD1WCnc"; 
+const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ====================================================================
-// DOM Elements and Event Listeners
-// ====================================================================
+// Build function URL from supabase URL
+const fnBase = SUPABASE_URL.replace(".supabase.co", ".functions.supabase.co");
+const AI_GENERATOR_URL = `${fnBase}/ai-generator`;
+console.log("AI_GENERATOR_URL:", AI_GENERATOR_URL);
 
-const form = document.getElementById('requisitionForm');
-const jdKeywordsInput = document.getElementById('jdKeywords');
-const jobDescriptionsTextarea = document.getElementById('jobDescriptions');
-const generateJdBtn = document.getElementById('generateJdBtn');
-const regenerateJdBtn = document.getElementById('regenerateJdBtn');
-const editJdBtn = document.getElementById('editJdBtn');
-const jdStatusMessage = document.getElementById('jdStatusMessage');
-// 🚨 NEW: Added element for Other Requirements text field
-const otherRequirementsInput = document.getElementById('otherRequirements'); 
-// 🚨 NEW: Added element for Name to be Replaced field (related to Requisition Type)
-const nameToBeReplacedInput = document.getElementById('nameToBeReplaced'); 
-
-
-let isTextEditable = false;
-
-// --- Utility Functions ---
-
-function toggleLoading(isLoading) {
-    const spinner = generateJdBtn.querySelector('.spinner');
-    
-    // Check if the spinner element exists before trying to access its properties
-    if (spinner) {
-        spinner.style.display = isLoading ? 'inline-block' : 'none';
-    }
-    
-    generateJdBtn.disabled = isLoading;
-    jdKeywordsInput.disabled = isLoading;
-    
-    if (!isLoading) {
-        // Restore original text after stopping loading, replacing the 'Generating...' text
-        // Ensure the button has the spinner span restored if it was removed
-        generateJdBtn.innerHTML = `Generate JD <span class="spinner" style="display:none;"></span>`;
-    } else {
-        // Change text only when loading
-        generateJdBtn.textContent = 'Generating...';
-    }
+// small helpers
+const $ = (id) => document.getElementById(id);
+function showMessage(text, isError = false) {
+  let el = $("formStatus");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "formStatus";
+    el.style.marginTop = "10px";
+    el.style.fontWeight = "600";
+    $("requisitionForm").appendChild(el);
+  }
+  el.style.color = isError ? "#ff6b6b" : "#e0f780";
+  el.textContent = text;
+}
+function setSubmitting(isSubmitting) {
+  const btn = $("submitFormBtn");
+  if (!btn) return;
+  btn.disabled = isSubmitting;
+  btn.textContent = isSubmitting ? "Submitting..." : "Submit";
 }
 
-function updateJdActions(hasText) {
-    regenerateJdBtn.disabled = !hasText;
-    editJdBtn.disabled = !hasText;
-    jobDescriptionsTextarea.readOnly = !isTextEditable;
-    
-    // Update button text based on current state
-    if (hasText && isTextEditable) {
-        editJdBtn.textContent = 'Editing Mode (Click to Lock)';
-        jobDescriptionsTextarea.focus();
-    } else if (hasText && !isTextEditable) {
-        editJdBtn.textContent = 'Accept & Edit';
-    } else {
-        editJdBtn.textContent = 'Accept & Edit';
-    }
-}
+// Wire the Generate JD button to the Edge Function
+function wireGenerateJD() {
+  const btn = $("generateJdBtn");
+  if (!btn) {
+    console.warn("generateJdBtn not found in DOM");
+    return;
+  }
 
-// --- AI Generation Handlers ---
+  const spinner = btn.querySelector(".spinner");
+  const keywordsInput = $("jdKeywords");
+  const jdTextarea = $("jobDescriptions");
+  const status = $("jdStatusMessage");
 
-async function generateJobDescription(keywords, mode = 'initial') {
-    if (!keywords.trim()) {
-        jdStatusMessage.textContent = "Please enter some keywords to generate the Job Description.";
-        jdStatusMessage.style.color = 'var(--error-color)';
-        return;
+  btn.addEventListener("click", async () => {
+    console.log("Generate JD button clicked");
+    const keywords = (keywordsInput?.value || "").trim();
+    if (!keywords) {
+      status.textContent = "Enter keywords first (comma-separated).";
+      return;
     }
 
-    toggleLoading(true);
-    jdStatusMessage.textContent = "Request sent to AI. Generating...";
-    jdStatusMessage.style.color = 'var(--secondary-color)';
-    isTextEditable = false;
-    updateJdActions(false);
-    jobDescriptionsTextarea.readOnly = true;
+    if (spinner) spinner.style.display = "inline-block";
+    btn.disabled = true;
+    status.textContent = "Generating...";
 
     try {
-        const response = await fetch(AI_FUNCTION_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                // Supabase Edge Functions require an Authorization header for CORS/security
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-            },
-            body: JSON.stringify({
-                keywords: keywords.trim(),
-                // Include the current JD text if we are in 'regenerate' mode
-                current_jd: mode === 'regenerate' ? jobDescriptionsTextarea.value : '' 
-            }),
-        });
+      const resp = await fetch(AI_GENERATOR_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keywords }),
+      });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        console.error("ai-generator error:", resp.status, json);
+        status.textContent = json?.error || `Generator failed (${resp.status}).`;
+        return;
+      }
 
-        const data = await response.json();
-        
-        if (data.error) {
-            throw new Error(data.error);
-        }
-
-        jobDescriptionsTextarea.value = data.generated_jd || "Could not generate Job Description. Please try again with different keywords.";
-        jdStatusMessage.textContent = "Job Description successfully generated.";
-        jdStatusMessage.style.color = 'var(--primary-color)';
-        updateJdActions(true);
-
-    } catch (error) {
-        console.error('Error generating JD:', error);
-        jdStatusMessage.textContent = `Error: ${error.message}. Check console for details.`;
-        jdStatusMessage.style.color = 'var(--error-color)';
-        jobDescriptionsTextarea.value = ''; // Clear on error
+      jdTextarea.value = json.generated_jd || "(no text returned)";
+      status.textContent = "Generated. You can edit before submitting.";
+      console.log("generator success", json);
+    } catch (e) {
+      console.error("generator fetch failed", e);
+      status.textContent = "Could not generate JD. Please try again.";
     } finally {
-        toggleLoading(false);
+      if (spinner) spinner.style.display = "none";
+      btn.disabled = false;
     }
+  });
 }
 
-// --- Event Listeners ---
+// serialize + submit to Supabase (unchanged from earlier)
+function serializeForm() {
+  return {
+    requester_name: $("requesterName").value.trim(),
+    requester_email: $("requesterEmail").value.trim(),
+    department: $("department").value || null,
+    position_external_title: $("positionExternalTitle").value.trim(),
+    position_career_level: $("positionCareerLevel").value || null,
+    about_the_role: $("aboutTheRole").value.trim() || null,
+    job_descriptions: $("jobDescriptions").value.trim(),
+    job_requirements: $("jobRequirements").value.trim() || null,
+    position_reporting_to: $("positionReportingTo").value.trim() || null,
+    budget_salary: $("budgetSalary").value ? Number($("budgetSalary").value) : null,
+    requisition_type: $("requisitionType").value || null,
+    name_to_be_replaced: $("nameToBeReplaced").value.trim() || null,
+    reason_of_requisition: $("reasonOfRequisition").value.trim() || null,
+    onboarding_corporate_card: $("onboardingCorporateCard")?.checked || false,
+    onboarding_business_card: $("onboardingBusinessCard")?.checked || false,
+    onboarding_others: $("onboardingOthers")?.checked || false,
+    onboarding_not_required: $("onboardingNotRequired")?.checked || false,
+    other_requirements: $("otherRequirements").value.trim() || null,
+    additional_comments: $("additionalComments").value.trim() || null,
+    requested_date: $("requestedDate").value || null,
+  };
+}
 
-generateJdBtn.addEventListener('click', () => {
-    generateJobDescription(jdKeywordsInput.value, 'initial');
-});
+document.addEventListener("DOMContentLoaded", () => {
+  wireGenerateJD();
 
-regenerateJdBtn.addEventListener('click', () => {
-    // Re-run the generation with the same keywords, but tell the AI to try again
-    generateJobDescription(jdKeywordsInput.value, 'regenerate');
-});
+  const form = $("requisitionForm");
+  if (form) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      showMessage("");
+      setSubmitting(true);
 
-editJdBtn.addEventListener('click', () => {
-    // Toggle the editing mode for the textarea
-    isTextEditable = !isTextEditable;
-    updateJdActions(true);
-});
-
-
-// --- Final Form Submission Handler ---
-
-form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    // Basic validation check for the AI field
-    if (!jobDescriptionsTextarea.value.trim()) {
-        alert("Please generate or manually enter the Job Description before submitting.");
+      if (!form.checkValidity()) {
+        setSubmitting(false);
+        showMessage("Please fill all required fields.", true);
         return;
+      }
+
+      try {
+        const payload = serializeForm();
+        const { data, error } = await supabase
+          .from("requisitions")
+          .insert(payload)
+          .select("id, position_external_title")
+          .single();
+
+        if (error) throw error;
+        const ref = data?.id || "(no id)";
+        showMessage(`Submitted. Reference ID: ${ref}`);
+        form.reset();
+      } catch (err) {
+        console.error(err);
+        showMessage("There was an error saving your request. Please try again.", true);
+      } finally {
+        setSubmitting(false);
+      }
+    });
+  } else {
+    console.warn("requisitionForm not found in DOM");
+  }
+});
+
+// --- START: wiring bootstrap (append to end of app.js) ---
+/*
+  Robust bootstrap for wireGenerateJD.
+  Purpose:
+    - expose window.wireGenerateJD for console debugging
+    - attempt to call wireGenerateJD without allowing earlier errors
+      to stop the rest of the module from wiring the button
+*/
+
+(function bootstrapWireGenerateJD() {
+  try {
+    // If the function exists in the module, expose it for debugging
+    if (typeof wireGenerateJD === "function") {
+      window.wireGenerateJD = wireGenerateJD;
+      console.log("wireGenerateJD() found and exposed on window");
+    } else {
+      console.warn("wireGenerateJD() not found at bootstrap time");
     }
 
-    const submitBtn = document.getElementById('submitFormBtn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Submitting...';
-
-    // 1. Gather all form data
-    const formData = new FormData(form);
-    
-    // 🚨 FIX 1: Aggregate Onboarding Checkboxes into an Array
-    const onboardingCheckboxes = document.querySelectorAll('input[name="onboardingRequirements"]:checked');
-    const onboardingRequirementsArray = Array.from(onboardingCheckboxes).map(cb => cb.value);
-
-    // 🚨 FIX 2 & 3: Ensure all new fields and correct mapping names are included
-    const data = {
-        // Simple Text/Select fields - snake_case names match index.ts record keys
-        requester_name: formData.get('requesterName'),
-        requester_email: formData.get('requesterEmail'),
-        department: formData.get('department'),
-        position_external_title: formData.get('positionExternalTitle'),
-        position_career_level: formData.get('positionCareerLevel'),
-        about_the_role: formData.get('aboutTheRole'),
-        job_descriptions: formData.get('jobDescriptions'), 
-        job_requirements: formData.get('jobRequirements'),
-        position_reporting_to: formData.get('positionReportingTo'),
-        
-        // Budget Salary is now a single number string
-        budget_salary: formData.get('budgetSalary'),
-        
-        requisition_type: formData.get('requisitionType'),
-        reason_of_requisition: formData.get('reasonOfRequisition'),
-        
-        // 🚨 FIX 4: Map checkbox array to the correct key for the Monday Multi-Select
-        onboarding_requirements: onboardingRequirementsArray,
-        
-        // 🚨 FIX 5: Capture the 'Name to be replaced' field
-        name_to_be_replaced: formData.get('nameToBeReplaced'),
-        
-        // 🚨 FIX 6: Capture the 'Other Requirements' field
-        other_requirements: formData.get('otherRequirements'),
-
-        additional_comments: formData.get('additionalComments'),
-        requested_date: formData.get('requestedDate'),
-        
-        // The old, separate boolean checkboxes are REMOVED as they are replaced by the array above.
-    };
-    
-    // 2. Call the Edge Function again, but this time for saving data
-    // NOTE: If you are sending this to the 'ai-generator' function, 
-    // you must ensure that function is configured to handle the 'submit' action 
-    // and trigger the separate 'monday-webhook' function or database insert. 
-    // Assuming the setup requires an action field:
-    try {
-        const saveResponse = await fetch(AI_FUNCTION_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-            },
-            // Send the entire form data payload
-            body: JSON.stringify({ 
-                action: 'submit',
-                payload: data 
-            }),
-        });
-
-        if (!saveResponse.ok) {
-            throw new Error(`Submission failed with status: ${saveResponse.status}`);
-        }
-        
-        const saveResult = await saveResponse.json();
-
-        if (saveResult.error) {
-            alert(`Submission Error: ${saveResult.error}`);
-            console.error('Submission Error:', saveResult.error);
+    // Attempt to call it immediately but guard against errors
+    const safeCall = () => {
+      try {
+        if (typeof wireGenerateJD === "function") {
+          wireGenerateJD();
+          console.log("wireGenerateJD() executed (bootstrap)");
         } else {
-            // NOTE: Assuming the save function returns an ID or confirmation
-            alert('Form submitted successfully! Your requisition ID is: ' + (saveResult.id || 'N/A'));
-            form.reset(); // Clear the form on success
-            jobDescriptionsTextarea.value = ''; // Reset JD field
-            isTextEditable = false;
-            updateJdActions(false);
-            jdStatusMessage.textContent = "Enter keywords and click 'Generate JD' to get started.";
-            jdStatusMessage.style.color = 'var(--secondary-color)';
+          // If not defined, try again later when DOM content loaded
+          document.addEventListener("DOMContentLoaded", () => {
+            try {
+              if (typeof wireGenerateJD === "function") {
+                wireGenerateJD();
+                console.log("wireGenerateJD() executed on DOMContentLoaded");
+              } else {
+                console.warn("wireGenerateJD() still not available");
+              }
+            } catch (err) {
+              console.error("wireGenerateJD() error on DOMContentLoaded:", err);
+            }
+          });
         }
+      } catch (err) {
+        console.error("wireGenerateJD() bootstrap call failed:", err);
+      }
+    };
 
-    } catch (error) {
-        alert('An unexpected error occurred during submission. See console for details.');
-        console.error('Submission Error:', error);
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit';
+    // If DOM already ready, call now; otherwise wait short time and then try
+    if (document.readyState === "complete" || document.readyState === "interactive") {
+      safeCall();
+    } else {
+      document.addEventListener("DOMContentLoaded", safeCall);
+      // also set a safety retry in 1 second
+      setTimeout(safeCall, 1000);
     }
-});
-
-// Initial state setup
-jobDescriptionsTextarea.readOnly = true;
-updateJdActions(false);
+  } catch (err) {
+    console.error("bootstrapWireGenerateJD top-level error:", err);
+  }
+})();
+ // --- END: wiring bootstrap ---
