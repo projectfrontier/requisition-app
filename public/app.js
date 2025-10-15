@@ -1,86 +1,78 @@
-// app.js (drop-in replacement)
-// Safe async bootstrap (no top-level await required)
+// public/app.js
+// Load in index.html with: <script type="module" src="app.js"></script>
 
-(function () {
-  "use strict";
+(async function initApp() {
+  try {
+    // ---- CONFIG ----
+    const SUPABASE_URL = "https://jlzbxqhvegqcvyhqnkrq.supabase.co"; // public
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsemJ4cWh2ZWdxY3Z5aHFua3JxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyNDQ0MDMsImV4cCI6MjA3NTgyMDQwM30.GU5mpLfbuF0o7W1KNRUV5zSBAqagCYwjTTg0xD1WCnc"; // public anon key
+    // -----------------
 
-  // ---- CONFIG (replace if needed) ----
-  const SUPABASE_URL = "https://jlzbxqhvegqcvyhqnkrq.supabase.co";
-  const SUPABASE_ANON_KEY =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsemJ4cWh2ZWdxY3Z5aHFua3JxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyNDQ0MDMsImV4cCI6MjA3NTgyMDQwM30.GU5mpLfbuF0o7W1KNRUV5zSBAqagCYwjTTg0xD1WCnc";
-  // -------------------------------------
+    // dynamic import (no top-level await errors in non-module environments)
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // Build function URL from supabase URL
-  const fnBase = SUPABASE_URL.replace(".supabase.co", ".functions.supabase.co");
-  const AI_GENERATOR_URL = `${fnBase}/ai-generator`;
-  console.log("AI_GENERATOR_URL:", AI_GENERATOR_URL);
+    // expose for debugging
+    window.__supabase = supabase;
+    console.log("supabase client created and exposed as window.__supabase.");
 
-  // small helpers scoped to this module
-  const $ = (id) => document.getElementById(id);
+    // build function URL
+    const fnBase = SUPABASE_URL.replace(".supabase.co", ".functions.supabase.co");
+    const AI_GENERATOR_URL = `${fnBase}/ai-generator`;
+    console.log("AI_GENERATOR_URL:", AI_GENERATOR_URL);
 
-  function showMessage(text, isError = false) {
-    let el = $("formStatus");
-    // create a status area under form if missing
-    if (!el) {
-      const form = $("requisitionForm");
-      if (!form) {
-        console.warn("showMessage: requisitionForm not found");
-        return;
+    // small helpers
+    const $ = (id) => document.getElementById(id);
+    function showMessage(text, isError = false) {
+      let el = $("formStatus");
+      if (!el) {
+        el = document.createElement("div");
+        el.id = "formStatus";
+        el.style.marginTop = "10px";
+        el.style.fontWeight = "600";
+        const frm = $("requisitionForm");
+        if (frm) frm.appendChild(el);
       }
-      el = document.createElement("div");
-      el.id = "formStatus";
-      el.style.marginTop = "10px";
-      el.style.fontWeight = "600";
-      form.appendChild(el);
+      if (!el) return;
+      el.style.color = isError ? "#ff6b6b" : "#e0f780";
+      el.textContent = text;
     }
-    el.style.color = isError ? "#ff6b6b" : "#e0f780";
-    el.textContent = text || "";
-  }
+    function setSubmitting(isSubmitting) {
+      const btn = $("submitFormBtn");
+      if (!btn) return;
+      btn.disabled = isSubmitting;
+      btn.textContent = isSubmitting ? "Submitting..." : "Submit";
+    }
 
-  function setSubmitting(isSubmitting) {
-    const btn = $("submitFormBtn");
-    if (!btn) return;
-    btn.disabled = isSubmitting;
-    btn.textContent = isSubmitting ? "Submitting..." : "Submit";
-  }
-
-  // wire Generate JD button to the Edge Function
-  function wireGenerateJD(supabaseClient) {
-    try {
+    // Generate JD wiring
+    function wireGenerateJD() {
       const btn = $("generateJdBtn");
       if (!btn) {
-        console.warn("wireGenerateJD: generateJdBtn not found in DOM");
+        console.warn("generateJdBtn not found in DOM");
         return;
       }
-      // prevent double-binding
-      if (btn.__wiredForJD) return;
-      btn.__wiredForJD = true;
-
       const spinner = btn.querySelector(".spinner");
       const keywordsInput = $("jdKeywords");
       const jdTextarea = $("jobDescriptions");
-      const status = $("jdStatusMessage") || (function () {
-        // fallback create small status under JD input
-        const el = document.createElement("div");
-        el.id = "jdStatusMessage";
-        el.style.marginTop = "6px";
-        el.style.opacity = "0.95";
-        if ($("jobDescriptions")) $("jobDescriptions").parentNode.insertBefore(el, $("jobDescriptions").nextSibling);
-        return el;
-      })();
+      const status = $("jdStatusMessage");
 
-      btn.addEventListener("click", async (evt) => {
-        evt && evt.preventDefault && evt.preventDefault();
+      // safety checks
+      if (!status) {
+        console.warn("jdStatusMessage not present; create an element with id='jdStatusMessage' for status");
+      }
+
+      btn.addEventListener("click", async (ev) => {
+        ev.preventDefault();
         console.log("Generate JD button clicked");
         const keywords = (keywordsInput?.value || "").trim();
         if (!keywords) {
-          status.textContent = "Enter keywords first (comma-separated).";
+          if (status) status.textContent = "Enter keywords first (comma-separated).";
           return;
         }
 
         if (spinner) spinner.style.display = "inline-block";
         btn.disabled = true;
-        status.textContent = "Generating...";
+        if (status) status.textContent = "Generating...";
 
         try {
           const resp = await fetch(AI_GENERATOR_URL, {
@@ -89,151 +81,152 @@
             body: JSON.stringify({ keywords }),
           });
 
-          // attempt to parse json safely
           const json = await resp.json().catch(() => ({}));
           if (!resp.ok) {
             console.error("ai-generator error:", resp.status, json);
-            status.textContent = json?.error || `Generator failed (${resp.status}).`;
+            if (status) status.textContent = json?.error || `Generator failed (${resp.status}).`;
             return;
           }
 
-          jdTextarea.value = json.generated_jd || "(no text returned)";
-          status.textContent = "Generated. You can edit before submitting.";
+          if (jdTextarea) jdTextarea.value = json.generated_jd || "(no text returned)";
+          if (status) status.textContent = "Generated. You can edit before submitting.";
           console.log("generator success", json);
-        } catch (e) {
-          console.error("generator fetch failed", e);
-          status.textContent = "Could not generate JD. Please try again.";
+        } catch (err) {
+          console.error("generator fetch failed", err);
+          if (status) status.textContent = "Could not generate JD. Please try again.";
         } finally {
           if (spinner) spinner.style.display = "none";
           btn.disabled = false;
         }
       });
       console.log("wireGenerateJD bound.");
-    } catch (err) {
-      console.error("wireGenerateJD top-level error:", err);
     }
-  }
 
-  // serialize form to payload
-  function serializeForm() {
-    const get = (id) => ($(`#${id}`) ? $(`#${id}`).value : "");
-    // safe accessors for checkboxes
-    const chk = (id) => !!document.querySelector(`#${id}`) && document.querySelector(`#${id}`).checked;
+    // serialize form (defensive - guards missing elements)
+    function valueOrNull(id) {
+      const el = $(id);
+      if (!el) return null;
+      return (el.value || "").toString().trim() || null;
+    }
+    function serializeForm() {
+      return {
+        requester_name: valueOrNull("requesterName") || "",
+        requester_email: valueOrNull("requesterEmail") || "",
+        department: valueOrNull("department"),
+        position_external_title: valueOrNull("positionExternalTitle") || "",
+        position_career_level: valueOrNull("positionCareerLevel"),
+        about_the_role: valueOrNull("aboutTheRole"),
+        job_descriptions: valueOrNull("jobDescriptions") || "",
+        job_requirements: valueOrNull("jobRequirements"),
+        position_reporting_to: valueOrNull("positionReportingTo"),
+        budget_salary: (() => {
+          const v = valueOrNull("budgetSalary");
+          return v ? Number(v) : null;
+        })(),
+        requisition_type: valueOrNull("requisitionType"),
+        name_to_be_replaced: valueOrNull("nameToBeReplaced"),
+        reason_of_requisition: valueOrNull("reasonOfRequisition"),
+        onboarding_corporate_card: $("onboardingCorporateCard")?.checked || false,
+        onboarding_business_card: $("onboardingBusinessCard")?.checked || false,
+        onboarding_others: $("onboardingOthers")?.checked || false,
+        onboarding_not_required: $("onboardingNotRequired")?.checked || false,
+        other_requirements: valueOrNull("otherRequirements"),
+        additional_comments: valueOrNull("additionalComments"),
+        requested_date: valueOrNull("requestedDate"),
+      };
+    }
 
-    return {
-      requester_name: (get("requesterName") || "").trim(),
-      requester_email: (get("requesterEmail") || "").trim(),
-      department: get("department") || null,
-      position_external_title: (get("positionExternalTitle") || "").trim(),
-      position_career_level: get("positionCareerLevel") || null,
-      about_the_role: (get("aboutTheRole") || "").trim() || null,
-      job_descriptions: (get("jobDescriptions") || "").trim(),
-      job_requirements: (get("jobRequirements") || "").trim() || null,
-      position_reporting_to: (get("positionReportingTo") || "").trim() || null,
-      budget_salary: get("budgetSalary") ? Number(get("budgetSalary")) : null,
-      requisition_type: get("requisitionType") || null,
-      name_to_be_replaced: (get("nameToBeReplaced") || "").trim() || null,
-      reason_of_requisition: (get("reasonOfRequisition") || "").trim() || null,
-      onboarding_corporate_card: chk("onboardingCorporateCard") || false,
-      onboarding_business_card: chk("onboardingBusinessCard") || false,
-      onboarding_others: chk("onboardingOthers") || false,
-      onboarding_not_required: chk("onboardingNotRequired") || false,
-      other_requirements: (get("otherRequirements") || "").trim() || null,
-      additional_comments: (get("additionalComments") || "").trim() || null,
-      requested_date: get("requestedDate") || null,
-    };
-  }
+    // Robust delegated submit handler (single listener on document)
+    function wireFormSubmit() {
+      // ensure generate JD wired too
+      wireGenerateJD();
 
-  // attach submit handler to the form
-  function wireFormSubmit(supabaseClient) {
-    try {
-      const form = $("requisitionForm");
-      if (!form) {
-        console.warn("wireFormSubmit: requisitionForm not found");
-        return;
-      }
-      if (form.__wiredForSubmit) return;
-      form.__wiredForSubmit = true;
+      // Log for debugging
+      console.log("Robust delegated submit handler initializing...");
 
-      form.addEventListener(
+      // Single delegated listener (catches the form submit reliably even if the element was re-rendered)
+      document.addEventListener(
         "submit",
         async (e) => {
+          // only handle our form
+          const target = e.target;
+          if (!target || target.id !== "requisitionForm") return;
+
           e.preventDefault();
           console.log("form submit handler fired - default prevented:", e.defaultPrevented);
           showMessage("");
           setSubmitting(true);
 
-          // browser constraint validation prevents submit event when invalid;
-          // form.checkValidity() here is just a second guard
-          if (!form.checkValidity()) {
-            setSubmitting(false);
-            showMessage("Please fill all required fields.", true);
-            return;
-          }
-
           try {
+            // HTML5 validity check
+            if (!target.checkValidity()) {
+              setSubmitting(false);
+              showMessage("Please fill all required fields.", true);
+              console.warn("form failed HTML5 validation");
+              return;
+            }
+
             const payload = serializeForm();
             console.log("submitting payload:", payload);
 
-            const { data, error } = await supabaseClient
+            const { data, error } = await supabase
               .from("requisitions")
               .insert(payload)
               .select("id, position_external_title")
               .single();
 
-            if (error) throw error;
+            if (error) {
+              console.error("submit error:", error);
+              // Specific handling for common RLS error from PostgREST
+              if (error?.code === "42501" || /row-level security/i.test(error?.message || "")) {
+                showMessage("Insert blocked by row-level security (see Supabase table policies).", true);
+                // give actionable guidance in console
+                console.error("Row-level security prevents anonymous inserts. Run the SQL policy change in Supabase console (see instructions).");
+              } else {
+                showMessage("There was an error saving your request. Please try again.", true);
+              }
+              return;
+            }
+
             const ref = data?.id || "(no id)";
             showMessage(`Submitted. Reference ID: ${ref}`);
-            form.reset();
+            target.reset();
+            console.log("submit success:", data);
           } catch (err) {
-            console.error("submit error:", err);
+            console.error("unexpected submit error:", err);
             showMessage("There was an error saving your request. Please try again.", true);
           } finally {
             setSubmitting(false);
           }
         },
-        { once: false }
+        { capture: false }
       );
 
-      console.log("form submit wired.");
-    } catch (err) {
-      console.error("wireFormSubmit error:", err);
+      console.log("Robust delegated submit handler wired (document-level).");
     }
+
+    // Boot wiring when DOM ready (safest)
+    const boot = () => {
+      try {
+        wireFormSubmit();
+        console.log("form submit wired.");
+      } catch (err) {
+        console.error("error wiring form submit:", err);
+      }
+    };
+
+    if (document.readyState === "complete" || document.readyState === "interactive") {
+      boot();
+    } else {
+      document.addEventListener("DOMContentLoaded", boot, { once: true });
+      // fallback retry
+      setTimeout(boot, 1000);
+    }
+
+    // expose wireGenerateJD for manual debugging
+    window.wireGenerateJD = wireGenerateJD;
+    console.log("wireGenerateJD bound.");
+  } catch (err) {
+    console.error("app.js boot error:", err);
   }
-
-  // main async boot — imports supabase client then wires everything
-  (async function boot() {
-    try {
-      const mod = await import("https://esm.sh/@supabase/supabase-js@2");
-      const createClient = mod.createClient;
-      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      window.__supabase = supabase; // expose for console debugging if needed
-      console.log("supabase client created and exposed as window.__supabase");
-
-      // Wait until DOM ready, then wire UI
-      const whenReady = () =>
-        new Promise((resolve) => {
-          if (document.readyState === "complete" || document.readyState === "interactive") {
-            return resolve();
-          }
-          document.addEventListener("DOMContentLoaded", resolve, { once: true });
-          // safety fallback
-          setTimeout(resolve, 1000);
-        });
-
-      await whenReady();
-
-      // wire generate JD and form submit
-      wireGenerateJD(supabase);
-      wireFormSubmit(supabase);
-
-      // expose to console for manual debugging
-      window.wireGenerateJD = () => wireGenerateJD(supabase);
-      window.wireFormSubmit = () => wireFormSubmit(supabase);
-
-      console.log("app.js: boot completed — UI wired.");
-    } catch (err) {
-      console.error("app.js boot error:", err);
-    }
-  })();
 })();
